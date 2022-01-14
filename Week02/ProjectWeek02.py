@@ -26,7 +26,7 @@ def build_ols_model(data):
 data = pd.read_csv('problem1.csv')
 
 # Multivariate Distribution
-# f(x,y) =
+# E(Y|X = x) = μ_y + cov_xy/σ2_x * (x - μ_x)
 μ_x = sum(data.x)/len(data.x)
 σ2_x = sum([(x - μ_x) ** 2 for x in data.x]) / (len(data.x) - 1)
 μ_y = sum(data.y)/len(data.y)
@@ -34,18 +34,22 @@ data = pd.read_csv('problem1.csv')
 X = data.x
 Y = data.y
 cov_xy = sum([(X[i] - μ_x) * (Y[i] - μ_y) for i in range(len(X))]) / (len(X) - 1)
-corr = cov_xy/math.sqrt(σ2_x)/math.sqrt(σ2_y)
-print("corr: ", corr)
+beta = cov_xy/σ2_x
+print("beta: ", beta)
 
 # OLS
 summary, c, slope, error_term = build_ols_model(data)
 print("slope: ", slope)
+
+print("diff: ", beta - slope)  # 0
+
 
 # Problem 2
 df = pd.read_csv('problem2.csv')
 
 # OLS
 summary_info, const, beta, resid = build_ols_model(df)
+print(summary_info)
 
 # e1 = results.resid
 # e2 = [y[i] - x[i] * beta - const for i in range(0, len(y))]  # Error term = y - x*beta - c
@@ -85,7 +89,7 @@ print("R_square: ", R_square)
 
 # MLE with T distribution
 # Use T distribution pdf => derivative: two complex function => gradient descend
-print("degree of freedom: ", len(x) - 1)  # len(x) = len(y) = 100
+# print("degree of freedom: ", len(x) - 1)  # len(x) = len(y) = 100
 
 
 def compute_error_for_line_given_points(b, m, df):

@@ -1,4 +1,5 @@
 # Week 2 Project
+import math
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -7,29 +8,52 @@ import statsmodels.api as sm
 import seaborn as sns
 from scipy import stats
 
-# Problem 1
 
+# Problem 1
+def build_ols_model(data):
+    Y = data.y
+    x_i = data.x
+    X_i = sm.add_constant(x_i)
+
+    ols = sm.OLS(Y, X_i)
+    result = ols.fit()
+    summary = result.summary()
+    c, slope = result.params
+    error_term = result.resid
+    return summary, c, slope, error_term
+
+
+data = pd.read_csv('problem1.csv')
+
+# Multivariate Distribution
+# f(x,y) =
+μ_x = sum(data.x)/len(data.x)
+σ2_x = sum([(x - μ_x) ** 2 for x in data.x]) / (len(data.x) - 1)
+μ_y = sum(data.y)/len(data.y)
+σ2_y = sum([(y - μ_y) ** 2 for y in data.y]) / (len(data.y) - 1)
+X = data.x
+Y = data.y
+cov_xy = sum([(X[i] - μ_x) * (Y[i] - μ_y) for i in range(len(X))]) / (len(X) - 1)
+corr = cov_xy/math.sqrt(σ2_x)/math.sqrt(σ2_y)
+print("corr: ", corr)
+
+# OLS
+summary, c, slope, error_term = build_ols_model(data)
+print("slope: ", slope)
 
 # Problem 2
 df = pd.read_csv('problem2.csv')
 
 # OLS
-y = df.y
-x = df.x
-X = sm.add_constant(x)  # Adds a constant term to X
+summary_info, const, beta, resid = build_ols_model(df)
 
-model = sm.OLS(y, X)
-results = model.fit()
-print(results.summary())
-
-const, beta = results.params
 # e1 = results.resid
-e2 = [y[i] - x[i] * beta - const for i in range(0, len(y))]  # Error term = y - x*beta - c
+# e2 = [y[i] - x[i] * beta - const for i in range(0, len(y))]  # Error term = y - x*beta - c
 
 sns.set()
-sns.distplot(e2, hist=False, kde=False, fit=stats.gamma)  # hist: display histogram; kde: kernel density
+sns.distplot(resid, hist=False, kde=False, fit=stats.gamma)  # hist: display histogram; kde: kernel density
 plt.title('PDF of Error Term')
-plt.xlabel('e2')
+plt.xlabel('residual')
 plt.show()
 
 # MLE with normality
@@ -39,6 +63,8 @@ plt.show()
 # theta_n,1 = [mean(x*y) - mean(x) * mean(y)]/[mean(x^2) - (mean(x))^2]
 # theta_n,0 = mean(y) - theta_1 * mean(x)
 
+x = df.x
+y = df.y
 temp = [x[i] * y[i] for i in range(0, len(x))]
 m_xy = np.mean(temp)  # mean(x*y)
 m_x = np.mean(x)  # mean(x)
@@ -129,46 +155,113 @@ run()
 # Problem 3
 
 # AR(1)
-# y_t = 1.0 + 0.5*y_t-1 + e, e ~ N(0,0.1)
+# y_t = 1.0 + 0.5*y_t-1 + e, e ~ N(0,0.01)
 n = 10000
 burn_in = 50
-y = []
+y1 = []
 e = np.random.normal(0, 0.1, burn_in + n)
 
-yt_last = 1.0
+yt_last = 1
 for i in range(0, n + burn_in):
     temp = 1.0 + 0.5 * yt_last + e[i]
     yt_last = temp
     if i >= burn_in:
-        y.append(temp)
-
-sm.graphics.tsa.plot_acf(y, lags=40)
-plt.xlim(0.3, 10.3)
-plt.ylim(-0.2, 0.6)
-plt.xlabel('t')
-plt.ylabel('acf')
-plt.title('AR(1)')
-plt.show()
+        y1.append(temp)
 
 # AR(2)
-# y_t = 1.0 + 0.5*y_t-1 + 0.3*y_t-2 + e, e ~ N(0,0.1)
-n = 10000
-burn_in = 50
-y = []
-e = np.random.normal(0, 0.1, burn_in + n)
+# y_t = 1.0 + 0.5*y_t-1 + 0.3*y_t-2 + e, e ~ N(0,0.01)
+y2 = []
+# e = np.random.normal(0, 0.1, burn_in + n)
 
-yt_llast = 1.0
+yt_llast = 1
 yt_last = 0.5
 for i in range(0, n + burn_in):
-    temp = 1.0 + 0.5 * yt_last + 0.3 * yt_last + e[i]
+    temp = 1.0 + 0.5 * yt_last + 0.3 * yt_llast + e[i]
+    yt_llast = yt_last
     yt_last = temp
     if i >= burn_in:
-        y.append(temp)
+        y2.append(temp)
 
-sm.graphics.tsa.plot_acf(y, lags=20)
-plt.xlim(0.3, 10.3)
-plt.ylim(-0.2, 0.6)
-plt.xlabel('t')
-plt.ylabel('acf')
-plt.title('AR(1)')
+# AR(3)
+# y_t = 1.0 + 0.5*y_t-1 + 0.3*y_t-2 + + 0.1*y_t-3 + e, e ~ N(0,0.01)
+y3 = []
+# e = np.random.normal(0, 0.1, burn_in + n)
+
+yt_lllast = 1
+yt_llast = 0.5
+yt_last = 0.3
+for i in range(0, n + burn_in):
+    temp = 1.0 + 0.5 * yt_last + 0.3 * yt_llast + 0.1 * yt_lllast + e[i]
+    yt_lllast = yt_llast
+    yt_llast = yt_last
+    yt_last = temp
+    if i >= burn_in:
+        y3.append(temp)
+
+fig, ax = plt.subplots(3, 2, figsize=(12, 15))
+sm.graphics.tsa.plot_acf(y1, lags=10, ax=ax[0, 0])
+sm.graphics.tsa.plot_pacf(y1, lags=10, ax=ax[0, 1], method='ywm')
+sm.graphics.tsa.plot_acf(y2, lags=10, ax=ax[1, 0])
+sm.graphics.tsa.plot_pacf(y2, lags=10, ax=ax[1, 1], method='ywm')
+sm.graphics.tsa.plot_acf(y3, lags=10, ax=ax[2, 0])
+sm.graphics.tsa.plot_pacf(y3, lags=10, ax=ax[2, 1], method='ywm')
+
+ax[0, 0].set(ylabel='AR(1)')
+ax[1, 0].set(ylabel='AR(2)')
+ax[2, 0].set(ylabel='AR(3)')
+
+for ax in ax.flat:
+    ax.set_ylim([-0.2, 1])
+    ax.set_xlim([0.3, 11])
+    ax.set(xlabel='t')
+plt.savefig("ACF and PACF of AR.png")
+plt.show()
+
+# MA1
+# y_t = 1.0 + 0.5*e_t-1 + e, e ~ N(0,.01)
+n = 10000
+burn_in = 50
+y1 = []
+e = np.random.normal(0, 0.1, burn_in + n)
+
+for i in range(1, n + burn_in):
+    y_t = 1.0 + 0.5 * e[i - 1] + e[i]
+    if i >= burn_in:
+        y1.append(y_t)
+
+# MA2
+# y_t = 1.0 + 0.5*e_t-1 + 0.3*e_t-2 + e, e ~ N(0,.01)
+y2 = []
+
+for i in range(2, n + burn_in):
+    y_t = 1.0 + 0.5 * e[i - 1] + 0.3 * e[i - 2] + e[i]
+    if i >= burn_in:
+        y2.append(y_t)
+
+# MA2
+# y_t = 1.0 + 0.5*e_t-1 + 0.3*e_t-2 + 0.1*e_t-3 + e, e ~ N(0,.01)
+y3 = []
+
+for i in range(3, n + burn_in):
+    y_t = 1.0 + 0.5 * e[i - 1] + 0.3 * e[i - 2] + 0.1 * e[i - 3] + e[i]
+    if i >= burn_in:
+        y3.append(y_t)
+
+fig, ax = plt.subplots(3, 2, figsize=(12, 15))
+sm.graphics.tsa.plot_acf(y1, lags=10, ax=ax[0, 0])
+sm.graphics.tsa.plot_pacf(y1, lags=10, ax=ax[0, 1], method='ywm')
+sm.graphics.tsa.plot_acf(y2, lags=10, ax=ax[1, 0])
+sm.graphics.tsa.plot_pacf(y2, lags=10, ax=ax[1, 1], method='ywm')
+sm.graphics.tsa.plot_acf(y3, lags=10, ax=ax[2, 0])
+sm.graphics.tsa.plot_pacf(y3, lags=10, ax=ax[2, 1], method='ywm')
+
+ax[0, 0].set(ylabel='MA(1)')
+ax[1, 0].set(ylabel='MA(2)')
+ax[2, 0].set(ylabel='MA(3)')
+
+for ax in ax.flat:
+    ax.set_ylim([-0.2, 1])
+    ax.set_xlim([0.3, 11])
+    ax.set(xlabel='t')
+plt.savefig("ACF and PACF of MA.png")
 plt.show()
